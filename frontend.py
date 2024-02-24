@@ -19,7 +19,7 @@ class WeatherApp(customtkinter.CTk):
         self.geometry(f"{1200}x600")
 
         # Set the application icon
-        self.iconbitmap('weathericon.ico'=
+        self.iconbitmap('weathericon.ico')
 
         # Configure grid layout (4x4)
         self.grid_columnconfigure(1, weight=1)
