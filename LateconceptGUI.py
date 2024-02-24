@@ -130,7 +130,14 @@ class WeatherApp(customtkinter.CTk):
             # Set map position
             self.map_widget.set_position(*coordinates)
         else:
-            tkinter.messagebox.showwarning("Advarsel", "Lokation blev ikke fundet på kortet.")
+            # Attempt to get coordinates based on station name
+            coordinates = self.get_coordinates_from_location_based_on_name(location)
+            if coordinates:
+                # Set map position based on station name
+                self.map_widget.set_position(*coordinates)
+            else:
+                # If neither coordinates nor station name coordinates are found, display a warning
+                tkinter.messagebox.showwarning("Warning", f"Location '{location}' not found on the map.")
 
     def get_coordinates_from_location(self, location):
         # Use a geocoding service to get coordinates from the station name
@@ -148,6 +155,17 @@ class WeatherApp(customtkinter.CTk):
                 latitude = float(data[0]['lat'])
                 longitude = float(data[0]['lon'])
                 return latitude, longitude
+        return None
+
+    def get_coordinates_from_location_based_on_name(self, location):
+        # Attempt to get coordinates from station name directly
+        stations = client.get_stations()
+        matching_station = next(
+            (station for station in stations if station['properties']['name'].lower() == location.lower()), None)
+        if matching_station:
+            latitude = float(matching_station['geometry']['coordinates'][1])
+            longitude = float(matching_station['geometry']['coordinates'][0])
+            return latitude, longitude
         return None
 
 
