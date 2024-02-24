@@ -86,9 +86,12 @@ class WeatherApp(customtkinter.CTk):
     def get_weather(self, *args):
         station_name = self.station_var.get()
         if station_name and station_name != "Vælg Station":
-            _, temperature = self.fetch_weather(station_name)  # Removed the weather_info variable
-            self.weather_display.configure(text=f"{temperature} °C")  # Updated to show only temperature
-            self.temperature_knob.set(temperature)
+            error_message, temperature = self.fetch_weather(station_name)
+            if temperature is not None:  # Check if temperature is not None
+                self.weather_display.configure(text=f"{temperature} °C")
+                self.temperature_knob.set(temperature)
+            else:
+                tkinter.messagebox.showwarning("Advarsel", error_message)
             # Show location on map
             self.show_location_on_map(station_name)
         else:
