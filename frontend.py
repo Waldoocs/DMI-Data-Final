@@ -73,6 +73,12 @@ class WeatherApp(customtkinter.CTk):
         self.deiconify()
 
     def show_map(self):
+        # Set initial map position to Denmark
+        denmark_coordinates = (56, 10)  # Latitude and longitude for Denmark
+        self.map_widget.set_position(*denmark_coordinates)
+        # Set initial zoom level to show the whole of Denmark
+        self.map_widget.set_zoom(7)  # Adjust the zoom level as needed
+        # Simulate loading time for the map
         import time
         time.sleep(2)
 
