@@ -1,5 +1,5 @@
 import PySimpleGUI as sg
-from latest_temperature import get_temperature, client  # Assuming your existing code is in a file named latest_temperature.py
+from Prototypebackend import get_temperature, client  # Assuming your existing code is in a file named latest_temperature.py
 
 # PySimpleGUI layout
 layout = [
