@@ -68,9 +68,15 @@ class WeatherApp(customtkinter.CTk):
     def populate_stations_and_show_map(self):
         # Load stations
         stations = client.get_stations()
-        if stations:
-            station_names = sorted([station['properties']['name'] for station in stations])
-            self.station_combobox.configure(values=station_names)
+        valid_stations = []  # List to store unique and valid stations
+        seen_stations = set()  # Set to keep track of seen station names
+        for station in stations:
+            station_name = station['properties']['name']
+            if station_name not in seen_stations:
+                seen_stations.add(station_name)
+                valid_stations.append(station_name)
+        if valid_stations:
+            self.station_combobox.configure(values=sorted(valid_stations))
 
         # Load map
         self.show_map()
@@ -86,9 +92,9 @@ class WeatherApp(customtkinter.CTk):
     def get_weather(self, *args):
         station_name = self.station_var.get()
         if station_name and station_name != "Vælg Station":
-            error_message, temperature = self.fetch_weather(station_name)
-            if temperature is not None:  # Check if temperature is not None
-                self.weather_display.configure(text=f"{temperature} °C")
+            error_message, temperature, wind_speed = self.fetch_weather(station_name)
+            if temperature is not None and wind_speed is not None:  # Check if both temperature and wind speed are not None
+                self.weather_display.configure(text=f" {temperature} °C\n {wind_speed} m/s")
                 self.temperature_knob.set(temperature)
             else:
                 tkinter.messagebox.showwarning("Advarsel", error_message)
@@ -99,17 +105,23 @@ class WeatherApp(customtkinter.CTk):
 
     def fetch_weather(self, station_name):
         stations = client.get_stations()
-        matching_station = next((station for station in stations if station['properties']['name'].lower() == station_name.lower()), None)
+        matching_station = next(
+            (station for station in stations if station['properties']['name'].lower() == station_name.lower()), None)
         if matching_station:
             station_id = matching_station['properties']['stationId']
-            observations = client.get_observations(parameter=Parameter.TempDry, station_id=station_id, limit=1)
-            if observations:
-                temperature = observations[0]['properties']['value']
-                return "", temperature  # Changed to return only temperature
+            # Fetch observations for temperature and wind speed
+            temperature_observations = client.get_observations(parameter=Parameter.TempDry, station_id=station_id,
+                                                               limit=1)
+            wind_speed_observations = client.get_observations(parameter=Parameter.WindSpeed, station_id=station_id,
+                                                              limit=1)
+            if temperature_observations and wind_speed_observations:
+                temperature = temperature_observations[0]['properties']['value']
+                wind_speed = wind_speed_observations[0]['properties']['value']
+                return "", temperature, wind_speed  # Return temperature and wind speed
             else:
-                return f"Ingen temperaturobservationer fundet for {station_name} station.", None
+                return f"Ingen observationer fundet for {station_name} station.", None, None
         else:
-            return f"Station '{station_name}' blev ikke fundet.", None
+            return f"Station '{station_name}' blev ikke fundet.", None, None
 
     def show_location_on_map(self, location):
         # Convert location to coordinates (latitude, longitude)
