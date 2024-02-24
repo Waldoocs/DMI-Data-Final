@@ -1,10 +1,11 @@
-import tkinter
+import tkinter as tk
 import tkinter.messagebox
 import customtkinter
 from dmi_open_data import DMIOpenDataClient, Parameter
 from tkintermapview import TkinterMapView
 import requests
 import threading
+from tkdial import ScrollKnob
 
 # Initialize the DMIOpenDataClient with your API key
 api_key = 'e2073b52-43bb-4d7f-88aa-7627598dd294'  # Replace with your API key
@@ -20,7 +21,7 @@ class WeatherApp(customtkinter.CTk):
 
         # configure window
         self.title("DMI Vejr App")
-        self.geometry(f"{1200}x{600}")
+        self.geometry(f"{1200}x600")
 
         # configure grid layout (4x4)
         self.grid_columnconfigure(1, weight=1)
@@ -43,28 +44,51 @@ class WeatherApp(customtkinter.CTk):
         self.get_weather_button = customtkinter.CTkButton(self.sidebar_frame, text="Få Vejr", command=self.get_weather)
         self.get_weather_button.grid(row=2, column=0, padx=20, pady=10)
 
-        self.weather_display = customtkinter.CTkLabel(self.sidebar_frame, text="", font=customtkinter.CTkFont(size=12))
+        self.weather_display = customtkinter.CTkLabel(self.sidebar_frame, text="", font=customtkinter.CTkFont(size=30))  # Increased font size
         self.weather_display.grid(row=3, column=0, padx=20, pady=10)
+
+        # Add label above the ScrollKnob
+        self.scrollknob_label = customtkinter.CTkLabel(self.sidebar_frame, text="Lavere procent = mere magelig", font=customtkinter.CTkFont(size=12, weight="normal"))
+        self.scrollknob_label.grid(row=6, column=0, padx=20, pady=(10, 0))
+
+        self.temperature_knob = ScrollKnob(self.sidebar_frame, start=0, end=50, steps=1)
+        self.temperature_knob.grid(row=5, column=0, padx=20, pady=(0, 10))
 
         # Create map widget
         self.map_widget = TkinterMapView(self, width=800, height=600)
         self.map_widget.grid(row=0, column=1, rowspan=4, sticky="nsew")
 
-        # Populate station combobox in a background thread
-        self.populate_stations_thread = threading.Thread(target=self.populate_stations)
+        # Hide main window until loading is done
+        self.withdraw()
+
+        # Populate station combobox and show map in background threads
+        self.populate_stations_thread = threading.Thread(target=self.populate_stations_and_show_map)
         self.populate_stations_thread.start()
 
-    def populate_stations(self):
+    def populate_stations_and_show_map(self):
+        # Load stations
         stations = client.get_stations()
         if stations:
             station_names = sorted([station['properties']['name'] for station in stations])
             self.station_combobox.configure(values=station_names)
 
+        # Load map
+        self.show_map()
+
+        # Once loading is done, show main window
+        self.deiconify()
+
+    def show_map(self):
+        # Simulate loading time for the map
+        import time
+        time.sleep(2)  # Adjust this value as needed for your loading time
+
     def get_weather(self, *args):
         station_name = self.station_var.get()
         if station_name and station_name != "Vælg Station":
-            weather_info = self.fetch_weather(station_name)
-            self.weather_display.configure(text=weather_info)
+            _, temperature = self.fetch_weather(station_name)  # Removed the weather_info variable
+            self.weather_display.configure(text=f"{temperature} °C")  # Updated to show only temperature
+            self.temperature_knob.set(temperature)
             # Show location on map
             self.show_location_on_map(station_name)
         else:
@@ -78,11 +102,11 @@ class WeatherApp(customtkinter.CTk):
             observations = client.get_observations(parameter=Parameter.TempDry, station_id=station_id, limit=1)
             if observations:
                 temperature = observations[0]['properties']['value']
-                return f"Temperatur ved {station_name}: er {temperature} °C"
+                return "", temperature  # Changed to return only temperature
             else:
-                return f"Ingen temperaturobservationer fundet for {station_name} station."
+                return f"Ingen temperaturobservationer fundet for {station_name} station.", None
         else:
-            return f"Station '{station_name}' blev ikke fundet."
+            return f"Station '{station_name}' blev ikke fundet.", None
 
     def show_location_on_map(self, location):
         # Convert location to coordinates (latitude, longitude)
