@@ -72,7 +72,7 @@ class WeatherApp(customtkinter.CTk):
         seen_stations = set()  # Set to keep track of seen station names
         for station in stations:
             station_name = station['properties']['name']
-            if station_name not in seen_stations:
+            if station_name not in seen_stations and self.is_station_in_denmark(station):
                 seen_stations.add(station_name)
                 valid_stations.append(station_name)
         if valid_stations:
@@ -138,6 +138,15 @@ class WeatherApp(customtkinter.CTk):
             else:
                 # If neither coordinates nor station name coordinates are found, display a warning
                 tkinter.messagebox.showwarning("Warning", f"Location '{location}' not found on the map.")
+
+    def is_station_in_denmark(self, station):
+        # Check if station coordinates are within Denmark's boundary
+        latitude = float(station['geometry']['coordinates'][1])
+        longitude = float(station['geometry']['coordinates'][0])
+        if 54.5 <= latitude <= 57.8 and 8 <= longitude <= 15:
+            return True
+        else:
+            return False
 
     def get_coordinates_from_location(self, location):
         # Use a geocoding service to get coordinates from the station name
