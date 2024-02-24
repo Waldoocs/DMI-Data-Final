@@ -4,6 +4,7 @@ import customtkinter
 from dmi_open_data import DMIOpenDataClient, Parameter
 from tkintermapview import TkinterMapView
 import requests
+import threading
 
 # Initialize the DMIOpenDataClient with your API key
 api_key = 'e2073b52-43bb-4d7f-88aa-7627598dd294'  # Replace with your API key
@@ -49,8 +50,9 @@ class WeatherApp(customtkinter.CTk):
         self.map_widget = TkinterMapView(self, width=800, height=600)
         self.map_widget.grid(row=0, column=1, rowspan=4, sticky="nsew")
 
-        # Populate station combobox
-        self.populate_stations()
+        # Populate station combobox in a background thread
+        self.populate_stations_thread = threading.Thread(target=self.populate_stations)
+        self.populate_stations_thread.start()
 
     def populate_stations(self):
         stations = client.get_stations()
